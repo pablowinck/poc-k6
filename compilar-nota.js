@@ -1,5 +1,6 @@
 const fs = require("fs");
 const readline = require("readline");
+const ProgressLogger = require("./progress-logger");
 
 // Constants for metric weights
 const WEIGHT = {
@@ -17,6 +18,7 @@ const metrics = {
   http_req_duration: [],
   http_req_blocked: [],
   http_req_check_failed: [],
+  http_req_failed: [],
 };
 
 /**
@@ -100,6 +102,15 @@ const rl = readline.createInterface({
   crlfDelay: Infinity,
 });
 
+const totalFileLength = fs.statSync("output.json").size;
+
+const progressLogger = new ProgressLogger(totalFileLength, "#", "-");
+let chunkCount = 0;
+fileStream.on("data", (chunk) => {
+  chunkCount += chunk.length;
+  progressLogger.update(chunkCount);
+});
+
 // Read the file line by line and collect metric data
 rl.on("line", (line) => {
   try {
@@ -112,6 +123,7 @@ rl.on("line", (line) => {
     if (metric === "checks" && data.value === 0) {
       metrics["http_req_check_failed"].push(1);
     }
+    if (type === "Point") metrics["http_req_check_failed"].push(0);
   } catch (err) {
     console.error(`Error parsing line: ${err}`);
   }
@@ -127,10 +139,9 @@ rl.on("close", () => {
   const normalizedMetrics = {
     http_req_duration: normalize(avgMetrics.http_req_duration, 1000),
     http_req_blocked: normalize(avgMetrics.http_req_blocked, 1000),
-    http_req_failed: normalize(avgMetrics.http_req_failed, 1000),
-    http_req_connecting: normalize(avgMetrics.http_req_connecting, 1000),
+    http_req_failed: normalize(avgMetrics.http_req_failed, 1),
     http_reqs: normalize(avgMetrics.http_reqs, 100),
-    http_req_check_failed: normalize(avgMetrics.http_req_check_failed, 100),
+    http_req_check_failed: normalize(avgMetrics.http_req_check_failed, 1),
   };
 
   const finalScore = calculateScore(normalizedMetrics);
