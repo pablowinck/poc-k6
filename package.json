@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node compilar-nota.js",
+    "k6": "k6 run ~/projects/poc-k6/index.js --out json=output.json"
   },
   "keywords": [],
   "author": "",
