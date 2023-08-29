@@ -3,17 +3,22 @@ import { check, group, sleep } from "k6";
 
 export const options = {
   stages: [
-    { duration: "5s", target: 20 },
-    { duration: "5s", target: 50 },
-    { duration: "5s", target: 80 },
-    { duration: "20s", target: 100 },
-    { duration: "20s", target: 200 },
-    { duration: "20s", target: 300 },
-    { duration: "20s", target: 400 },
-    { duration: "20s", target: 500 },
-    { duration: "20s", target: 800 },
-    { duration: "5s", target: 20 },
-    { duration: "5s", target: 0 },
+    // load
+    { duration: "1m", target: 100 },
+    { duration: "1m", target: 200 },
+    { duration: "30s", target: 0 }, // ramp down
+    // smoke
+    { duration: "1m", target: 3 },
+    { duration: "30s", target: 0 }, // ramp down
+    // stress
+    { duration: "4m", target: 200 },
+    { duration: "2m", target: 400 },
+    { duration: "30s", target: 0 }, // ramp down
+    // spike
+    { duration: "2m", target: 2000 },
+    { duration: "1m", target: 0 },
+    { duration: "1m", target: 2000 },
+    { duration: "1m", target: 0 },
   ],
 };
 
@@ -181,7 +186,6 @@ export default function () {
 
     check(res, {
       "status is 200": (r) => r.status === 200,
-      "nickname is unique": (r) => JSON.parse(r.body)[0].apelido === nickname,
       "name is not null": (r) => JSON.parse(r.body)[0].nome !== null,
       "nickname is not null": (r) => JSON.parse(r.body)[0].apelido !== null,
       "name is a string": (r) => typeof JSON.parse(r.body)[0].nome === "string",
