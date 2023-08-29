@@ -80,6 +80,7 @@ function calculateScore(normalizedMetrics) {
     score += sanitizeScore(durationScore);
     score += sanitizeScore(resilienceScore);
     score += sanitizeScore(checkTestScore);
+    score = score > 100 ? 100 : score;
     return score < 0 ? 0 : score;
 }
 
