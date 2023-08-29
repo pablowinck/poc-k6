@@ -58,7 +58,6 @@ function sanitizeScore(score) {
  * @returns {number} - The final score
  */
 function calculateScore(normalizedMetrics) {
-  console.log({ normalizedMetrics });
   const failedPoints = normalizeScoreValue(
     normalizedMetrics.http_req_failed,
     1,
@@ -85,7 +84,7 @@ function calculateScore(normalizedMetrics) {
   const durationScore = durationPoints * WEIGHT.POSITIVE.DURATION;
   const resilienceScore = 25 - failedPoints * WEIGHT.NEGATIVE.FAILED;
   const checkTestScore = 25 - checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED;
-  console.log(`[duration-score] adding ${durationScore.toFixed(4)}`);
+  console.log(`\n[duration-score] adding ${durationScore.toFixed(4)}`);
   console.log(`[resilience-score] adding ${resilienceScore.toFixed(4)}`);
   console.log(`[check-test-score] adding ${checkTestScore.toFixed(4)}`);
   score += sanitizeScore(durationScore);
@@ -146,4 +145,16 @@ rl.on("close", () => {
 
   const finalScore = calculateScore(normalizedMetrics);
   console.log(`## Final Score: ${finalScore.toFixed(4)}`);
+  fetch("http://localhost:9999/contagem-pessoas").then((res) => res.json())
+    .then((data) => {
+      fs.writeFileSync("score.json", JSON.stringify({
+        score: finalScore,
+        count: data.count,
+      }));
+    }).catch((_) => {
+      fs.writeFileSync("score.json", JSON.stringify({
+        score: finalScore,
+        count: 0,
+      }));
+    })
 });
