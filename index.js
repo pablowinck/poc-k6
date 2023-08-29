@@ -3,11 +3,17 @@ import { check, group, sleep } from 'k6';
 
 export const options = {
   stages: [
-    { duration: '3s', target: 100 }, // ramp up to 50 users
-    { duration: '3s', target: 200 }, // ramp up to 50 users
-    { duration: '3s', target: 300 }, // ramp up to 50 users
-    { duration: '5s', target: 300 }, // ramp up to 50 users
-    { duration: '3s', target: 500 }, // ramp up to 50 users
+    { duration: '5s', target: 20 }, 
+    { duration: '5s', target: 50 }, 
+    { duration: '5s', target: 80 }, 
+    { duration: '20s', target: 100 }, 
+    { duration: '20s', target: 200 }, 
+    { duration: '20s', target: 300 }, 
+    { duration: '20s', target: 400 }, 
+    { duration: '20s', target: 500 }, 
+    { duration: '20s', target: 800 }, 
+    { duration: '5s', target: 20 }, 
+    { duration: '5s', target: 0 }, 
   ],
 };
 
