@@ -1,22 +1,22 @@
-const fs = require('fs');
-const readline = require('readline');
+const fs = require("fs");
+const readline = require("readline");
 
 // Constants for metric weights
 const WEIGHT = {
-    POSITIVE: {
-        DURATION: 0.5,
-    },
-    NEGATIVE: {
-        FAILED: 0.25,
-        CHECK_FAILED: 0.25,
-    },
-}
+  POSITIVE: {
+    DURATION: 0.5,
+  },
+  NEGATIVE: {
+    FAILED: 0.25,
+    CHECK_FAILED: 0.25,
+  },
+};
 
 // Initialize an object to store metric values
 const metrics = {
-    http_req_duration: [],
-    http_req_blocked: [],
-    http_req_check_failed: [],
+  http_req_duration: [],
+  http_req_blocked: [],
+  http_req_check_failed: [],
 };
 
 /**
@@ -25,8 +25,8 @@ const metrics = {
  * @returns {number} - The average value
  */
 function calculateAverage(arr) {
-    const sum = arr.reduce((a, b) => a + b, 0);
-    return arr.length ? sum / arr.length : 0;
+  const sum = arr.reduce((a, b) => a + b, 0);
+  return arr.length ? sum / arr.length : 0;
 }
 
 /**
@@ -36,18 +36,18 @@ function calculateAverage(arr) {
  * @returns {number} - The normalized value
  */
 function normalize(value, maxValue) {
-    if (!value) return 0;
-    return value / maxValue;
+  if (!value) return 0;
+  return value / maxValue;
 }
 
 function normalizeScoreValue(value, weight) {
-    if (!value) return 0;
-    const correctValue = value > 1 ? 1 : value;
-    return weight * (weight - correctValue) * 100;
+  if (!value) return 0;
+  const correctValue = value > 1 ? 1 : value;
+  return weight * (weight - correctValue) * 100;
 }
 
 function sanitizeScore(score) {
-    return score > 0 ? score : 0;
+  return score > 0 ? score : 0;
 }
 
 /**
@@ -56,74 +56,83 @@ function sanitizeScore(score) {
  * @returns {number} - The final score
  */
 function calculateScore(normalizedMetrics) {
-    console.log({ normalizedMetrics });
-    const failedPoints = normalizeScoreValue(normalizedMetrics.http_req_failed, 1);
-    const checkFailedPoints = normalizeScoreValue(normalizedMetrics.http_req_check_failed, 1);
-    const durationPoints = normalizeScoreValue(normalizedMetrics.http_req_duration, 1);
-    let score = 0;
-    const noFailedCalls = failedPoints <= 0;
-    const noCheckFailedCalls = checkFailedPoints <= 0;
-    if (noFailedCalls) {
-        console.log('[none-failed-calls] adding 5');
-        score += 5;
-    }
-    if (noCheckFailedCalls) {
-        console.log('[none-check-failed] adding 5');
-        score += 5;
-    }
-    const durationScore = durationPoints * WEIGHT.POSITIVE.DURATION;
-    const resilienceScore = 25 - (failedPoints * WEIGHT.NEGATIVE.FAILED);
-    const checkTestScore = 25 - (checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED);
-    console.log(`[duration-score] adding ${durationScore.toFixed(4)}`);
-    console.log(`[resilience-score] adding ${resilienceScore.toFixed(4)}`);
-    console.log(`[check-test-score] adding ${checkTestScore.toFixed(4)}`);
-    score += sanitizeScore(durationScore);
-    score += sanitizeScore(resilienceScore);
-    score += sanitizeScore(checkTestScore);
-    score = score > 100 ? 100 : score;
-    return score < 0 ? 0 : score;
+  console.log({ normalizedMetrics });
+  const failedPoints = normalizeScoreValue(
+    normalizedMetrics.http_req_failed,
+    1,
+  );
+  const checkFailedPoints = normalizeScoreValue(
+    normalizedMetrics.http_req_check_failed,
+    1,
+  );
+  const durationPoints = normalizeScoreValue(
+    normalizedMetrics.http_req_duration,
+    1,
+  );
+  let score = 0;
+  const noFailedCalls = failedPoints <= 0;
+  const noCheckFailedCalls = checkFailedPoints <= 0;
+  if (noFailedCalls) {
+    console.log("[none-failed-calls] adding 5");
+    score += 5;
+  }
+  if (noCheckFailedCalls) {
+    console.log("[none-check-failed] adding 5");
+    score += 5;
+  }
+  const durationScore = durationPoints * WEIGHT.POSITIVE.DURATION;
+  const resilienceScore = 25 - failedPoints * WEIGHT.NEGATIVE.FAILED;
+  const checkTestScore = 25 - checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED;
+  console.log(`[duration-score] adding ${durationScore.toFixed(4)}`);
+  console.log(`[resilience-score] adding ${resilienceScore.toFixed(4)}`);
+  console.log(`[check-test-score] adding ${checkTestScore.toFixed(4)}`);
+  score += sanitizeScore(durationScore);
+  score += sanitizeScore(resilienceScore);
+  score += sanitizeScore(checkTestScore);
+  score = score > 100 ? 100 : score;
+  return score < 0 ? 0 : score;
 }
 
 // Create a read stream for the metrics file
-const fileStream = fs.createReadStream('output.json');
+const fileStream = fs.createReadStream("output.json");
 const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity
+  input: fileStream,
+  crlfDelay: Infinity,
 });
 
 // Read the file line by line and collect metric data
-rl.on('line', (line) => {
-    try {
-        const parsedLine = JSON.parse(line);
-        const { type, metric, data } = parsedLine;
+rl.on("line", (line) => {
+  try {
+    const parsedLine = JSON.parse(line);
+    const { type, metric, data } = parsedLine;
 
-        if (type === 'Point' && metrics[metric] !== undefined) {
-            metrics[metric].push(data.value);
-        }
-        if (metric === 'checks' && data.value === 0) {
-            metrics['http_req_check_failed'].push(1);
-        }
-    } catch (err) {
-        console.error(`Error parsing line: ${err}`);
+    if (type === "Point" && metrics[metric] !== undefined) {
+      metrics[metric].push(data.value);
     }
+    if (metric === "checks" && data.value === 0) {
+      metrics["http_req_check_failed"].push(1);
+    }
+  } catch (err) {
+    console.error(`Error parsing line: ${err}`);
+  }
 });
 
 // After reading the entire file, calculate and display the final score
-rl.on('close', () => {
-    const avgMetrics = {};
-    for (const [metricName, values] of Object.entries(metrics)) {
-        avgMetrics[metricName] = calculateAverage(values);
-    }
+rl.on("close", () => {
+  const avgMetrics = {};
+  for (const [metricName, values] of Object.entries(metrics)) {
+    avgMetrics[metricName] = calculateAverage(values);
+  }
 
-    const normalizedMetrics = {
-        http_req_duration: normalize(avgMetrics.http_req_duration, 1000),
-        http_req_blocked: normalize(avgMetrics.http_req_blocked, 1000),
-        http_req_failed: normalize(avgMetrics.http_req_failed, 1000),
-        http_req_connecting: normalize(avgMetrics.http_req_connecting, 1000),
-        http_reqs: normalize(avgMetrics.http_reqs, 100),
-        http_req_check_failed: normalize(avgMetrics.http_req_check_failed, 100),
-    };
+  const normalizedMetrics = {
+    http_req_duration: normalize(avgMetrics.http_req_duration, 1000),
+    http_req_blocked: normalize(avgMetrics.http_req_blocked, 1000),
+    http_req_failed: normalize(avgMetrics.http_req_failed, 1000),
+    http_req_connecting: normalize(avgMetrics.http_req_connecting, 1000),
+    http_reqs: normalize(avgMetrics.http_reqs, 100),
+    http_req_check_failed: normalize(avgMetrics.http_req_check_failed, 100),
+  };
 
-    const finalScore = calculateScore(normalizedMetrics);
-    console.log(`## Final Score: ${finalScore.toFixed(4)}`);
+  const finalScore = calculateScore(normalizedMetrics);
+  console.log(`## Final Score: ${finalScore.toFixed(4)}`);
 });
