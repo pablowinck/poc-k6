@@ -6,7 +6,7 @@ class ProgressLogger {
     if (str_right) this.str_right = str_right;
     this.total = total;
     this.current = 0;
-    this.strtotal = 60; //progress bar width。
+    this.strtotal = 40; //progress bar width。
   }
   update(current) {
     this.current++;
