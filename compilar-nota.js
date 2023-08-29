@@ -4,12 +4,11 @@ const readline = require('readline');
 // Constants for metric weights
 const WEIGHT = {
     POSITIVE: {
-        DURATION: 1,
+        DURATION: 0.5,
     },
     NEGATIVE: {
-        BLOCKED: 0.2,
-        FAILED: 0.4,
-        CHECK_FAILED: 0.4,
+        FAILED: 0.25,
+        CHECK_FAILED: 0.25,
     },
 }
 
@@ -47,6 +46,10 @@ function normalizeScoreValue(value, weight) {
     return weight * (weight - correctValue) * 100;
 }
 
+function sanitizeScore(score) {
+    return score > 0 ? score : 0;
+}
+
 /**
  * Calculate the final score based on normalized metrics.
  * @param {Object} normalizedMetrics - The object containing normalized metric values
@@ -54,21 +57,30 @@ function normalizeScoreValue(value, weight) {
  */
 function calculateScore(normalizedMetrics) {
     console.log({ normalizedMetrics });
-    const blocked = normalizeScoreValue(normalizedMetrics.http_req_blocked, WEIGHT.NEGATIVE.BLOCKED);
-    const failed = normalizeScoreValue(normalizedMetrics.http_req_failed, WEIGHT.NEGATIVE.FAILED);
-    const checkFailed = normalizeScoreValue(normalizedMetrics.http_req_check_failed, WEIGHT.NEGATIVE.CHECK_FAILED);
-    const duration = normalizeScoreValue(normalizedMetrics.http_req_duration, WEIGHT.POSITIVE.DURATION);
-    const negativeSum = blocked + failed + checkFailed;
-    const positiveSum = duration;
-    console.log(`+ Duration: ${duration.toFixed(4)}`);
-    console.log(`- Blocked: ${blocked.toFixed(4)}`);
-    console.log(`- Failed: ${failed.toFixed(4)}`);
-    console.log(`- Check Failed: ${checkFailed.toFixed(4)}`);
-    console.log(`-- Negative Sum: ${negativeSum.toFixed(4)}`);
-    console.log(`++ Positive Sum: ${positiveSum.toFixed(4)}`);
-
-    const result = positiveSum - negativeSum;
-    return result < 0 ? 0 : result;
+    const failedPoints = normalizeScoreValue(normalizedMetrics.http_req_failed, 1);
+    const checkFailedPoints = normalizeScoreValue(normalizedMetrics.http_req_check_failed, 1);
+    const durationPoints = normalizeScoreValue(normalizedMetrics.http_req_duration, 1);
+    let score = 0;
+    const noFailedCalls = failedPoints <= 0;
+    const noCheckFailedCalls = checkFailedPoints <= 0;
+    if (noFailedCalls) {
+        console.log('[none-failed-calls] adding 5');
+        score += 5;
+    }
+    if (noCheckFailedCalls) {
+        console.log('[none-check-failed] adding 5');
+        score += 5;
+    }
+    const durationScore = durationPoints * WEIGHT.POSITIVE.DURATION;
+    const resilienceScore = 25 - (failedPoints * WEIGHT.NEGATIVE.FAILED);
+    const checkTestScore = 25 - (checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED);
+    console.log(`[duration-score] adding ${durationScore.toFixed(4)}`);
+    console.log(`[resilience-score] adding ${resilienceScore.toFixed(4)}`);
+    console.log(`[check-test-score] adding ${checkTestScore.toFixed(4)}`);
+    score += sanitizeScore(durationScore);
+    score += sanitizeScore(resilienceScore);
+    score += sanitizeScore(checkTestScore);
+    return score < 0 ? 0 : score;
 }
 
 // Create a read stream for the metrics file
