@@ -8,8 +8,8 @@ const WEIGHT = {
     DURATION: 0.5,
   },
   NEGATIVE: {
-    FAILED: 0.25,
-    CHECK_FAILED: 0.25,
+    FAILED: 0.1,
+    CHECK_FAILED: 0.4,
   },
 };
 
@@ -82,8 +82,8 @@ function calculateScore(normalizedMetrics) {
     score += 5;
   }
   const durationScore = durationPoints * WEIGHT.POSITIVE.DURATION;
-  const resilienceScore = 25 - failedPoints * WEIGHT.NEGATIVE.FAILED;
-  const checkTestScore = 25 - checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED;
+  const resilienceScore = (WEIGHT.NEGATIVE.FAILED * 100) - (failedPoints * WEIGHT.NEGATIVE.FAILED);
+  const checkTestScore = (WEIGHT.NEGATIVE.CHECK_FAILED * 100) - (checkFailedPoints * WEIGHT.NEGATIVE.CHECK_FAILED);
   console.log(`\n[duration-score] adding ${durationScore.toFixed(4)}`);
   console.log(`[resilience-score] adding ${resilienceScore.toFixed(4)}`);
   console.log(`[check-test-score] adding ${checkTestScore.toFixed(4)}`);
